@@ -10,12 +10,52 @@
   <script type="module">
     import { React, ReactDOM } from 'https://unpkg.com/es-react@16.13.1'
     import htm from 'https://unpkg.com/htm?module'
+    import { endpoint } from 'https://cdn.skypack.dev/@octokit/endpoint'
+    import marked from 'https://unpkg.com/marked@2.0.0/lib/marked.esm.js'
 
     const html = htm.bind(React.createElement)
 
+    const TOKEN = 'f7e62cb9956619dcf08ec6ca240eed4d4ac1514c'
+
     const Posts = (props) => {
+      const [issues, setIssues] = React.useState([])
+      React.useEffect(() => {
+        async function fetchIssues() {
+          const { url, ...options } = endpoint("GET /repos/:owner/:repo/issues", {
+            owner: 'joelhooks',
+            repo: 'react-issues-blog',
+            auth: TOKEN
+          });
+          const response = await fetch(url, options)
+          const issues = await response.json()
+          setIssues(issues)
+        }
+        fetchIssues()
+      }, [])
+
+      const {
+          search,
+        } = window.location;
+
       return html`
-        <div>These will be our posts</div>
+        ${issues
+          .filter(({ number }) => !search || Number(search.slice(1)) === number)
+          .map(({
+            number,
+            title,
+            body,
+          }) => {
+            return html`
+              <div id=${number} key=${number}>
+                <h1>
+                  <a href="?${number}">
+                    ${title}
+                  </a>
+                </h1>
+                <div dangerouslySetInnerHTML="${{ __html: marked(body)}}"/>
+              </div>
+            `
+          })}
       `
     }
 
@@ -28,7 +68,4 @@
     );
   </script>
 </head>
-<body>
-  hi
-</body>
 </html>
